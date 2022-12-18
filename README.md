@@ -3,13 +3,13 @@
   Yolov6-Pip: Packaged version of the Yolov6 repository  
 </h2>
 <h4>
-    <img width="500" alt="teaser" src="assets/speed_comparision_v2.png">
+    <img width="800" alt="teaser" src="assets/speed_comparision_v2.png">
 </h4>
 </div>
 
 ## <div align="center">Overview</div>
 
-This repo is a packaged version of the [Yolov7](https://github.com/meituan/YOLOv6/) model.
+This repo is a packaged version of the [Yolov6](https://github.com/meituan/YOLOv6/) model.
 ### Installation
 ```
 pip install yolov6detect
