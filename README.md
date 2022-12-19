@@ -17,7 +17,17 @@ pip install yolov6detect
 
 ### Yolov6 Inference
 ```python
+from yolov6 import YOLOV6
 
+model = YOLOV6(weights='yolov6s.pt', device='cuda:0')
+
+model.classes = None
+model.conf_thres = 0.25
+model.iou_thresh = 0.45
+model.view_img = False
+model.save_img = True
+
+pred = model.predict(source='data/images',yaml='data/coco.yaml', img_size=640)
 ```
 ### Citation
 ```bibtex
