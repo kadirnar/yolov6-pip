@@ -411,14 +411,16 @@ def attempt_download(file, repo='meituan/YOLOv6', release='0.2.0'):
     return str(file)
 
 class DetectBackend(nn.Module):
-    def __init__(self, weights='yolov6s.pt', device=None, dnn=True):
+    def __init__(self, weights='yolov6s.pt', device=None, dnn=True, hf_token=None):
 
         super().__init__()
-        assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
+        # assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
         from yolov6.utils.checkpoint import load_checkpoint
-        #breakpoint()
-        attempt_download(weights)
-        model = load_checkpoint(weights, map_location=device)
+        from yolov6.utils.downloads import attempt_download_from_hub
+        
+        save_weight_path = attempt_download_from_hub(weights, hf_token=hf_token)
+        #attempt_download(weights)
+        model = load_checkpoint(save_weight_path, map_location=device)
         stride = int(model.stride.max())
         self.__dict__.update(locals())  # assign all variables to self
 
