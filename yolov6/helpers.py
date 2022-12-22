@@ -10,7 +10,7 @@ from pathlib import Path
 from collections import deque
 import sys
 
-
+from yolov6.utils.downloads import attempt_download_from_hub
 from yolov6.utils.events import LOGGER, load_yaml
 from yolov6.layers.common import DetectBackend
 from yolov6.data.datasets import LoadData
@@ -64,41 +64,35 @@ class YOLOV6:
         self, 
         weights = 'weights/yolov6s.pt',
         device = 'cpu',
-        half = False,
-        conf_thres = 0.25,
-        iou_thresh = 0.45,
-        classes = None,
-        agnostic_nms = False,
-        max_det = 1000,
-        save_dir = 'inference/output',
-        save_txt = False,
-        save_img = True,
-        hide_labels = False,
-        hide_conf = False,
-        view_img = False
+        hf_model = False,
     ):
 
         self.__dict__.update(locals())
-        self.weights = weights
-        self.device = torch.device('cpu' if device == 'cpu' else 'cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.half = half
-        
+        self.device = device
+        self.half = False
+
         # Load model
+        if hf_model:
+            self.weights = attempt_download_from_hub(weights, hf_token=None)
+        else:
+            self.weights = weights
+            
         model = self.load_model()
         self.stride = model.stride
         
         # Model Parameters
-        self.conf_thres = conf_thres
-        self.iou_thresh = iou_thresh
-        self.classes = classes
-        self.agnostic_nms = agnostic_nms
-        self.max_det = max_det
-        self.save_dir = save_dir
-        self.save_txt = save_txt
-        self.save_img = save_img
-        self.hide_labels = hide_labels
-        self.hide_conf = hide_conf
-        self.view_img = view_img
+        self.conf = 0.25
+        self.iou = 0.45
+        self.classes = None
+        self.agnostic_nms = False
+        self.max_det = 1000
+        self.save_dir = 'inference/output'
+        self.save_txt = False
+        self.save = True
+        self.hide_labels = False
+        self.hide_conf = False
+        self.show = False
+
 
     
     def load_model(self):
@@ -143,7 +137,7 @@ class YOLOV6:
             
             t1 = time.time()
             pred_results = self.model(img)
-            det = non_max_suppression(pred_results, self.conf_thres, self.iou_thresh, classes=self.classes, agnostic=self.agnostic_nms, max_det=self.max_det)[0]
+            det = non_max_suppression(pred_results, self.conf, self.iou, classes=self.classes, agnostic=self.agnostic_nms, max_det=self.max_det)[0]
             t2 = time.time()
             
             # Create output files in nested dirs that mirrors the structure of the images' dirs
@@ -167,7 +161,7 @@ class YOLOV6:
                     with open(txt_path + '.txt', 'a') as f:
                         f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-                if self.save_img or self.view_img:  # Add bbox to image
+                if self.save or self.show:  # Add bbox to image
                     class_num = int(cls)  # integer class
                     label = None if self.hide_labels else (class_names[class_num] if self.hide_conf else f'{class_names[class_num]} {conf:.2f}')
 
@@ -190,7 +184,7 @@ class YOLOV6:
                     font_thickness=2,
                 )
 
-            if self.view_img:
+            if self.show:
                 if img_path not in windows:
                     windows.append(img_path)
                     cv2.namedWindow(str(img_path), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
@@ -200,7 +194,7 @@ class YOLOV6:
                 
             
             # Save results (image with detections)
-            if self.save_img:
+            if self.save:
                 if files.type == 'image':
                     cv2.imwrite(save_path, img_src)
                 else:  # 'video' or 'stream' 
@@ -223,9 +217,8 @@ if __name__ == '__main__':
     model = YOLOV6(
         weights='kadirnar/yolov6t-v2.0',
         device='cuda:0',
-        half=False
+        hf_model=True,
     )
-
     model = model.predict(
         source='data/images/',
         yaml='data/coco.yaml',

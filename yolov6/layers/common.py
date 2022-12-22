@@ -362,53 +362,6 @@ def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
             file.unlink(missing_ok=True)  # remove partial downloads
             raise Exception(error_msg or assert_msg)  # raise informative error
            
-def attempt_download(file, repo='meituan/YOLOv6', release='0.2.0'):
-    import urllib
-    import requests
-    import subprocess
-
-    def github_assets(repository, version='tags/latest'):
-        response = requests.get(f'https://api.github.com/repos/{repository}/releases/{version}').json()  # github api
-        return response['tag_name'], [x['name'] for x in response['assets']]  # tag, assets
-
-    file = Path(str(file).strip().replace("'", ''))
-    if not file.exists():
-        # URL specified
-        name = Path(urllib.parse.unquote(str(file))).name  # decode '%2F' to '/' etc.
-        if str(file).startswith(('http:/', 'https:/')):  # download
-            url = str(file).replace(':/', '://')  # Pathlib turns :// -> :/
-            file = name.split('?')[0]  # parse authentication https://url.com/file.txt?auth...
-            if Path(file).is_file():
-                return file
-            else:
-                safe_download(file=file, url=url, min_bytes=1E5)
-            return file
-
-        # GitHub assets
-        assets = [
-            'yolov6t.pt', 'yolov6s.pt', 'yolov6n.pt', 'yolov6m.pt', 'yolov6l.pt']
-        try:
-            tag, assets = github_assets(repo, release)
-        except Exception:
-            try:
-                tag, assets = github_assets(repo)  # latest release
-            except Exception:
-                try:
-                    tag = subprocess.check_output('git tag', shell=True, stderr=subprocess.STDOUT).decode().split()[-1]
-                except Exception:
-                    tag = release
-
-        file.parent.mkdir(parents=True, exist_ok=True)  # make parent dir (if required)
-        if name in assets:
-            url3 = 'https://drive.google.com/drive/folders/1EFQTEUeXWSFww0luse2jB9M1QNZQGwNl'  # backup gdrive mirror
-            safe_download(
-                file,
-                url=f'https://github.com/{repo}/releases/download/{tag}/{name}',
-                url2=f'https://storage.googleapis.com/{repo}/{tag}/{name}',  # backup url (optional)
-                min_bytes=1E5,
-                error_msg=f'{file} missing, try downloading from https://github.com/{repo}/releases/{tag} or {url3}')
-
-    return str(file)
 
 class DetectBackend(nn.Module):
     def __init__(self, weights='yolov6s.pt', device=None, dnn=True, hf_token=None):
@@ -416,11 +369,8 @@ class DetectBackend(nn.Module):
         super().__init__()
         # assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
         from yolov6.utils.checkpoint import load_checkpoint
-        from yolov6.utils.downloads import attempt_download_from_hub
         
-        save_weight_path = attempt_download_from_hub(weights, hf_token=hf_token)
-        #attempt_download(weights)
-        model = load_checkpoint(save_weight_path, map_location=device)
+        model = load_checkpoint(weights, map_location=device)
         stride = int(model.stride.max())
         self.__dict__.update(locals())  # assign all variables to self
 
