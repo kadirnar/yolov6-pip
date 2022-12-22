@@ -19,13 +19,14 @@ pip install yolov6detect
 ```python
 from yolov6 import YOLOV6
 
-model = YOLOV6(weights='yolov6s.pt', device='cuda:0')
+model = YOLOV6(weights='yolov6s.pt', device='cuda:0') 
+#model = YOLOV6(weights='kadirnar/yolov6t-v2.0', device='cuda:0', hf_model=True)
 
 model.classes = None
-model.conf_thres = 0.25
-model.iou_thresh = 0.45
-model.view_img = False
-model.save_img = True
+model.conf = 0.25
+model.iou_ = 0.45
+model.show = False
+model.save = True
 
 pred = model.predict(source='data/images',yaml='data/coco.yaml', img_size=640)
 ```
