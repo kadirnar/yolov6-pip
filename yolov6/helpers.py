@@ -8,9 +8,8 @@ import time
 from tqdm import tqdm
 from pathlib import Path
 from collections import deque
-import sys
 
-from yolov6.utils.downloads import attempt_download_from_hub
+from yolov6.utils.downloads import attempt_download_from_hub, attempt_download
 from yolov6.utils.events import LOGGER, load_yaml
 from yolov6.layers.common import DetectBackend
 from yolov6.data.datasets import LoadData
@@ -70,13 +69,11 @@ class YOLOV6:
         self.__dict__.update(locals())
         self.device = device
         self.half = False
-
         # Load model
         if hf_model:
             self.weights = attempt_download_from_hub(weights, hf_token=None)
         else:
-            self.weights = weights
-            
+            self.weights = attempt_download(weights)
         model = self.load_model()
         self.stride = model.stride
         
@@ -92,6 +89,7 @@ class YOLOV6:
         self.hide_labels = False
         self.hide_conf = False
         self.show = False
+        self.font_path = './yolov6/utils/Arial.ttf'
 
 
     
@@ -151,7 +149,7 @@ class YOLOV6:
 
             # check image and font
             assert img_ori.data.contiguous, 'Image needs to be contiguous. Please apply to input images with np.ascontiguousarray(im).'
-            Inferer.font_check()
+            Inferer.font_check(font=self.font_path)
 
             det[:, :4] = Inferer.rescale(img.shape[2:], det[:, :4], img_src.shape).round()
             for *xyxy, conf, cls in reversed(det):
@@ -215,9 +213,9 @@ class YOLOV6:
     
 if __name__ == '__main__':
     model = YOLOV6(
-        weights='kadirnar/yolov6t-v2.0',
+        weights='yolov6s.pt',
         device='cuda:0',
-        hf_model=True,
+        hf_model=False,
     )
     model = model.predict(
         source='data/images/',
