@@ -12,7 +12,7 @@ import cv2
 import torch
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from yolov6.deploy.TensorRT.Processor import Processor
+from Processor import Processor
 from tqdm import tqdm
 
 

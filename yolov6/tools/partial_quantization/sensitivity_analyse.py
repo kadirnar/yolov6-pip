@@ -16,10 +16,10 @@ from yolov6.utils.checkpoint import load_checkpoint
 from yolov6.data.data_load import create_dataloader
 from yolov6.utils.config import Config
 
-from yolov6.tools.partial_quantization.eval import EvalerWrapper
-from yolov6.tools.partial_quantization.utils import module_quant_enable, module_quant_disable, model_quant_disable
-from yolov6.tools.partial_quantization.utils import quant_sensitivity_save, quant_sensitivity_load
-from yolov6.tools.partial_quantization.ptq import do_ptq, load_ptq
+from tools.partial_quantization.eval import EvalerWrapper
+from tools.partial_quantization.utils import module_quant_enable, module_quant_disable, model_quant_disable
+from tools.partial_quantization.utils import quant_sensitivity_save, quant_sensitivity_load
+from tools.partial_quantization.ptq import do_ptq, load_ptq
 
 from pytorch_quantization import nn as quant_nn
 
