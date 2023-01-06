@@ -90,6 +90,7 @@ class YOLOV6:
         self.hide_conf = False
         self.show = False
         self.font_path = './yolov6/utils/Arial.ttf'
+        self.torchyolo = False
 
 
     
@@ -152,63 +153,66 @@ class YOLOV6:
             Inferer.font_check(font=self.font_path)
 
             det[:, :4] = Inferer.rescale(img.shape[2:], det[:, :4], img_src.shape).round()
-            for *xyxy, conf, cls in reversed(det):
-                if self.save_txt:  # Write to file
-                    xywh = (Inferer.box_convert(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    line = (cls, *xywh, conf)
-                    with open(txt_path + '.txt', 'a') as f:
-                        f.write(('%g ' * len(line)).rstrip() % line + '\n')
+            if self.torchyolo is False:
+                for *xyxy, conf, cls in reversed(det):
+                    if self.save_txt:  # Write to file
+                        xywh = (Inferer.box_convert(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (cls, *xywh, conf)
+                        with open(txt_path + '.txt', 'a') as f:
+                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-                if self.save or self.show:  # Add bbox to image
-                    class_num = int(cls)  # integer class
-                    label = None if self.hide_labels else (class_names[class_num] if self.hide_conf else f'{class_names[class_num]} {conf:.2f}')
+                    if self.save or self.show:  # Add bbox to image
+                        class_num = int(cls)  # integer class
+                        label = None if self.hide_labels else (class_names[class_num] if self.hide_conf else f'{class_names[class_num]} {conf:.2f}')
+                        Inferer.plot_box_and_label(img_ori, max(round(sum(img_ori.shape) / 2 * 0.003), 2), xyxy, label, color=Inferer.generate_colors(class_num, True))
 
-                    Inferer.plot_box_and_label(img_ori, max(round(sum(img_ori.shape) / 2 * 0.003), 2), xyxy, label, color=Inferer.generate_colors(class_num, True))
+    
+                img_src = np.asarray(img_ori)
 
- 
-            img_src = np.asarray(img_ori)
+                # FPS counter
+                fps_calculator.update(1.0 / (t2 - t1))
+                avg_fps = fps_calculator.accumulate()
+                if files.type == 'video':
+                    Inferer.draw_text(
+                        img_src,
+                        f'FPS: {avg_fps:.2f}',
+                        pos=(20, 20),
+                        font_scale=1.0,
+                        text_color=(204, 85, 17),
+                        text_color_bg=(255, 255, 255),
+                        font_thickness=2,
+                    )
 
-            # FPS counter
-            fps_calculator.update(1.0 / (t2 - t1))
-            avg_fps = fps_calculator.accumulate()
-            if files.type == 'video':
-                Inferer.draw_text(
-                    img_src,
-                    f'FPS: {avg_fps:.2f}',
-                    pos=(20, 20),
-                    font_scale=1.0,
-                    text_color=(204, 85, 17),
-                    text_color_bg=(255, 255, 255),
-                    font_thickness=2,
-                )
-
-            if self.show:
-                if img_path not in windows:
-                    windows.append(img_path)
-                    cv2.namedWindow(str(img_path), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
-                    cv2.resizeWindow(str(img_path), img_src.shape[1], img_src.shape[0])
-                cv2.imshow(str(img_path), img_src)
-                cv2.waitKey(0)  # 1 millisecond
+                if self.show:
+                    if img_path not in windows:
+                        windows.append(img_path)
+                        cv2.namedWindow(str(img_path), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
+                        cv2.resizeWindow(str(img_path), img_src.shape[1], img_src.shape[0])
+                    cv2.imshow(str(img_path), img_src)
+                    cv2.waitKey(0)  # 1 millisecond
+                    
                 
+                # Save results (image with detections)
+                if self.save:
+                    if files.type == 'image':
+                        cv2.imwrite(save_path, img_src)
+                    else:  # 'video' or 'stream' 
+                        if vid_path != save_path:  # new video
+                            vid_path = save_path
+                            if isinstance(vid_writer, cv2.VideoWriter):
+                                vid_writer.release()  # release previous video writer
+                            if vid_cap:  # video
+                                fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                                w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                                h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            else:  # stream
+                                fps, w, h = 30, img_ori.shape[1], img_ori.shape[0]
+                            save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
+                            vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                        vid_writer.write(img_src)
+            else:
+                return det
             
-            # Save results (image with detections)
-            if self.save:
-                if files.type == 'image':
-                    cv2.imwrite(save_path, img_src)
-                else:  # 'video' or 'stream' 
-                    if vid_path != save_path:  # new video
-                        vid_path = save_path
-                        if isinstance(vid_writer, cv2.VideoWriter):
-                            vid_writer.release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, img_ori.shape[1], img_ori.shape[0]
-                        save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
-                        vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    vid_writer.write(img_src)
 
     
 if __name__ == '__main__':
