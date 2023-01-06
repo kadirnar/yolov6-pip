@@ -5,6 +5,11 @@
 <h4>
     <img width="800" alt="teaser" src="docs/speed_comparision_v3.png">
 </h4>
+<div>
+    <a href="https://pepy.tech/project/yolov6detect"><img src="https://pepy.tech/badge/yolov6detect" alt="downloads"></a>
+    <a href="https://badge.fury.io/py/yolov6detect"><img src="https://badge.fury.io/py/yolov6detect.svg" alt="pypi version"></a>
+    <a href="https://huggingface.co/spaces/kadirnar/yolov6"><img src="https://img.shields.io/badge/%20HuggingFace%20-Demo-blue.svg" alt="HuggingFace Spaces"></a>
+</div>
 </div>
 
 ## <div align="center">Overview</div>
