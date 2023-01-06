@@ -121,6 +121,56 @@ class SPPF(nn.Module):
             return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
 
 
+class SimCSPSPPF(nn.Module):
+    # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
+    def __init__(self, in_channels, out_channels, kernel_size=5, e=0.5):
+        super(SimCSPSPPF, self).__init__()
+        c_ = int(out_channels * e)  # hidden channels
+        self.cv1 = SimConv(in_channels, c_, 1, 1)
+        self.cv2 = SimConv(in_channels, c_, 1, 1)
+        self.cv3 = SimConv(c_, c_, 3, 1)
+        self.cv4 = SimConv(c_, c_, 1, 1)
+        
+        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.cv5 = SimConv(4 * c_, c_, 1, 1)
+        self.cv6 = SimConv(c_, c_, 3, 1)
+        self.cv7 = SimConv(2 * c_, out_channels, 1, 1)
+
+    def forward(self, x):
+        x1 = self.cv4(self.cv3(self.cv1(x)))
+        y0 = self.cv2(x)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            y1 = self.m(x1)
+            y2 = self.m(y1)
+            y3 =self.cv6(self.cv5(torch.cat([x1, y1, y2, self.m(y2)], 1)))
+        return self.cv7(torch.cat((y0, y3), dim=1))
+
+class CSPSPPF(nn.Module):
+    # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
+    def __init__(self, in_channels, out_channels, kernel_size=5, e=0.5):
+        super(CSPSPPF, self).__init__()
+        c_ = int(out_channels * e)  # hidden channels
+        self.cv1 = Conv(in_channels, c_, 1, 1)
+        self.cv2 = Conv(in_channels, c_, 1, 1)
+        self.cv3 = Conv(c_, c_, 3, 1)
+        self.cv4 = Conv(c_, c_, 1, 1)
+        
+        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.cv5 = Conv(4 * c_, c_, 1, 1)
+        self.cv6 = Conv(c_, c_, 3, 1)
+        self.cv7 = Conv(2 * c_, out_channels, 1, 1)
+
+    def forward(self, x):
+        x1 = self.cv4(self.cv3(self.cv1(x)))
+        y0 = self.cv2(x)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            y1 = self.m(x1)
+            y2 = self.m(y1)
+            y3 =self.cv6(self.cv5(torch.cat([x1, y1, y2, self.m(y2)], 1)))
+        return self.cv7(torch.cat((y0, y3), dim=1))
+
 class Transpose(nn.Module):
     '''Normal Transpose, default for upsampling'''
     def __init__(self, in_channels, out_channels, kernel_size=2, stride=2):
@@ -344,32 +394,14 @@ class LinearAddBlock(nn.Module):
             out += self.scale_identity(inputs)
         out = self.relu(self.se(self.bn(out)))
         return out
-    
-def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
-    import os
-    # Attempts to download file from url or url2, checks and removes incomplete downloads < min_bytes
 
-    file = Path(file)
-    assert_msg = f"Downloaded file '{file}' does not exist or size is < min_bytes={min_bytes}"
-    try:  # url1
-        torch.hub.download_url_to_file(url, str(file), progress=True)  # pytorch download
-        assert file.exists() and file.stat().st_size > min_bytes, assert_msg  # check
-    except Exception as e:  # url2
-        file.unlink(missing_ok=True)  # remove partial downloads
-        os.system(f"curl -L '{url2 or url}' -o '{file}' --retry 3 -C -")  # curl download, retry and resume on fail
-    finally:
-        if not file.exists() or file.stat().st_size < min_bytes:  # check
-            file.unlink(missing_ok=True)  # remove partial downloads
-            raise Exception(error_msg or assert_msg)  # raise informative error
-           
 
 class DetectBackend(nn.Module):
-    def __init__(self, weights='yolov6s.pt', device=None, dnn=True, hf_token=None):
+    def __init__(self, weights='yolov6s.pt', device=None, dnn=True):
 
         super().__init__()
-        # assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
+        assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
         from yolov6.utils.checkpoint import load_checkpoint
-        
         model = load_checkpoint(weights, map_location=device)
         stride = int(model.stride.max())
         self.__dict__.update(locals())  # assign all variables to self
@@ -467,6 +499,32 @@ class BepC3(nn.Module):
             return self.cv3(torch.cat((self.m(self.cv1(x)), self.cv2(x)), dim=1))
         else:
             return self.cv3(self.m(self.cv1(x)))
+
+
+class BiFusion(nn.Module):
+    '''BiFusion Block in PAN'''
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.cv1 = SimConv(in_channels[0], out_channels, 1, 1)
+        self.cv2 = SimConv(in_channels[1], out_channels, 1, 1)
+        self.cv3 = SimConv(out_channels * 3, out_channels, 1, 1)
+        
+        self.upsample = Transpose(
+            in_channels=out_channels,
+            out_channels=out_channels,
+        )
+        self.downsample = SimConv(
+            in_channels=out_channels,
+            out_channels=out_channels,
+            kernel_size=3,
+            stride=2
+        )
+
+    def forward(self, x):
+        x0 = self.upsample(x[0])
+        x1 = self.cv1(x[1])
+        x2 = self.downsample(self.cv2(x[2]))
+        return self.cv3(torch.cat((x0, x1, x2), dim=1))
 
 
 def get_block(mode):
