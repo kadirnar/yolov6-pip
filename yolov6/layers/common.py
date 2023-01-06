@@ -400,7 +400,7 @@ class DetectBackend(nn.Module):
     def __init__(self, weights='yolov6s.pt', device=None, dnn=True):
 
         super().__init__()
-        assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
+        # assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
         from yolov6.utils.checkpoint import load_checkpoint
         model = load_checkpoint(weights, map_location=device)
         stride = int(model.stride.max())
