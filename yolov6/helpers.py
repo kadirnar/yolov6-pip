@@ -211,7 +211,7 @@ class YOLOV6:
                             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         vid_writer.write(img_src)
             else:
-                return det
+                return det, class_names
             
 
     
