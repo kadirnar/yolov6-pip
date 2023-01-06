@@ -164,7 +164,7 @@ class YOLOV6:
                     if self.save or self.show:  # Add bbox to image
                         class_num = int(cls)  # integer class
                         label = None if self.hide_labels else (class_names[class_num] if self.hide_conf else f'{class_names[class_num]} {conf:.2f}')
-                        Inferer.plot_box_and_label(img_ori, max(round(sum(img_ori.shape) / 2 * 0.003), 2), xyxy, label, color=Inferer.generate_colors(class_num, True))
+                        Inferer.plot_box_and_label(img_ori, max(round(sum(img_ori.shape) / 2 * 0.001), 2), xyxy, label, color=Inferer.generate_colors(class_num, True))
 
     
                 img_src = np.asarray(img_ori)
@@ -180,7 +180,7 @@ class YOLOV6:
                         font_scale=1.0,
                         text_color=(204, 85, 17),
                         text_color_bg=(255, 255, 255),
-                        font_thickness=2,
+                        font_thickness=1,
                     )
 
                 if self.show:
