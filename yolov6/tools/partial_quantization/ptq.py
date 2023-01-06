@@ -7,7 +7,7 @@ from pytorch_quantization import tensor_quant
 from pytorch_quantization import calib
 from pytorch_quantization.tensor_quant import QuantDescriptor
 
-from tools.partial_quantization.utils import set_module, module_quant_disable
+from yolov6.tools.partial_quantization.utils import set_module, module_quant_disable
 
 def collect_stats(model, data_loader, batch_number, device='cuda'):
     """Feed data to the network and collect statistic"""

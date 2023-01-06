@@ -217,7 +217,7 @@ class YOLOV6:
     
 if __name__ == '__main__':
     model = YOLOV6(
-        weights='yolov6s.pt',
+        weights='yolov6s6.pt',
         device='cuda:0',
         hf_model=False,
     )

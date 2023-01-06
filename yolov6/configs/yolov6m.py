@@ -38,6 +38,7 @@ model = dict(
         },
     )
 )
+
 solver=dict(
     optim='SGD',
     lr_scheduler='Cosine',
@@ -49,7 +50,6 @@ solver=dict(
     warmup_momentum=0.8,
     warmup_bias_lr=0.1       
 )
-
  
 data_aug = dict(
     hsv_h=0.015,  

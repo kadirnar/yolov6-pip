@@ -10,7 +10,7 @@ import math
 
 import cv2
 import torch
-from yolov6.deploy.TensorRT.Processor import Processor
+from Processor import Processor
 from tqdm import tqdm
 
 

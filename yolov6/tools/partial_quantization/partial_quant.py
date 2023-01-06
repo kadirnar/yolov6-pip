@@ -14,9 +14,10 @@ from yolov6.layers.common import *
 from yolov6.utils.events import LOGGER, load_yaml
 from yolov6.utils.checkpoint import load_checkpoint
 
-from yolov6.tools.partial_quantization.eval import EvalerWrapper
-from yolov6.tools.partial_quantization.utils import get_module, concat_quant_amax_fuse, quant_sensitivity_load
-from yolov6.tools.partial_quantization.ptq import load_ptq, partial_quant
+from tools.partial_quantization.eval import EvalerWrapper
+from tools.partial_quantization.utils import get_module, concat_quant_amax_fuse, quant_sensitivity_load
+from tools.partial_quantization.ptq import load_ptq, partial_quant
+
 from pytorch_quantization import nn as quant_nn
 
 # concat_fusion_list = [
