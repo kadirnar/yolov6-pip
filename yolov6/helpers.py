@@ -210,6 +210,8 @@ class YOLOV6:
                             save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                         vid_writer.write(img_src)
+                        
+                    return save_path
             else:
                 return det, class_names
             
