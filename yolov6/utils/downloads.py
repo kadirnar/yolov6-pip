@@ -22,9 +22,6 @@ def attempt_download_from_hub(repo_id, hf_token=None):
     except (RepositoryNotFoundError, HFValidationError):
         return None
 
-
-
-
 def safe_download(file, url, url2=None, min_bytes=1E0, error_msg=''):
     import os
     # Attempts to download file from url or url2, checks and removes incomplete downloads < min_bytes
