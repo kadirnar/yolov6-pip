@@ -15,7 +15,7 @@ from yolov6.layers.common import DetectBackend
 from yolov6.data.datasets import LoadData
 from yolov6.utils.nms import non_max_suppression
 from yolov6.core.inferer import Inferer
-
+from yolov6.utils.coco_classes import COCO_CLASSES
 
 class CalcFPS:
     def __init__(self, nsamples: int = 50):
@@ -92,7 +92,6 @@ class YOLOV6:
         self.font_path = './yolov6/utils/Arial.ttf'
         self.torchyolo = False
 
-
     
     def load_model(self):
         # Init model
@@ -115,12 +114,10 @@ class YOLOV6:
     def predict(
         self, 
         source,
-        yaml,
         img_size,
     ):
         ''' Model Inference and results visualization '''
         files = LoadData(source)
-        class_names = load_yaml(yaml)['names']
         img_size = check_img_size(img_size, s=self.stride)
         if self.device != 'cpu':
             self.model(torch.zeros(1, 3, *img_size).to(self.device).type_as(next(self.model.model.parameters())))  # warmup
@@ -163,7 +160,7 @@ class YOLOV6:
 
                     if self.save or self.show:  # Add bbox to image
                         class_num = int(cls)  # integer class
-                        label = None if self.hide_labels else (class_names[class_num] if self.hide_conf else f'{class_names[class_num]} {conf:.2f}')
+                        label = None if self.hide_labels else (COCO_CLASSES[class_num] if self.hide_conf else f'{COCO_CLASSES[class_num]} {conf:.2f}')
                         Inferer.plot_box_and_label(img_ori, max(round(sum(img_ori.shape) / 2 * 0.001), 2), xyxy, label, color=Inferer.generate_colors(class_num, True))
 
     
@@ -213,7 +210,7 @@ class YOLOV6:
                         
                     return save_path
             else:
-                return det, class_names
+                return det
             
 
     
@@ -225,6 +222,5 @@ if __name__ == '__main__':
     )
     model = model.predict(
         source='data/images/',
-        yaml='data/coco.yaml',
         img_size=640,
     )
